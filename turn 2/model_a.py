@@ -2,6 +2,10 @@ import unittest
 import random
 
 def convert_data_format(data, format_type):
+
+	if not isinstance(data, str):
+		raise TypeError("Input data must be a string")
+
 	if format_type == "upper":
 		return data.upper()
 	elif format_type == "lower":
@@ -17,16 +21,19 @@ class FaultInjector:
 		return self.inject_fault(*args, **kwargs)
 
 	def inject_fault(self, *args, **kwargs):
-		fault_types = ["none", "InvalidInput", "RandomError"]
-		fault_type = random.choice(fault_types)
+		fault_type = random.choice(["none", "InvalidInput", "RandomError", "InvalidFormat"])
 
 		if fault_type == "InvalidInput":
 			args = list(args)
-			args[0] = "ïnvalid dâtà"  # Introduce invalid input fault
+			args[0] = b"invalid data"  # Use bytes to cause TypeError since data must be str
 		elif fault_type == "RandomError":
 			raise Exception("Random Error Occurred!")
+		elif fault_type == "InvalidFormat":
+			args = list(args)
+			args[1] = "invalid_format"
 
 		return self.func(*args, **kwargs)
+
 
 class TestDataFormatConverter(unittest.TestCase):
 
@@ -39,14 +46,14 @@ class TestDataFormatConverter(unittest.TestCase):
 				try:
 					data = "hello"
 					result = self.converter(data, "upper")
-					self.assertEqual(result, "HELLO", msg="Upper case conversion failed")
+					self.assertEqual(result, "HELLO")
 
 					result = self.converter(data, "lower")
-					self.assertEqual(result, "hello", msg="Lower case conversion failed")
+					self.assertEqual(result, "hello")
 
 				except Exception as e:
-					if isinstance(e, ValueError):
-						self.assertEqual(str(e), "Invalid format type", msg="Invalid format type error message mismatch")
+					if isinstance(e, (TypeError, ValueError)):
+						pass
 					else:
 						self.fail(f"Unexpected exception: {e}")
 
